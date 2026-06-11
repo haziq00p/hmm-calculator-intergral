@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Definite Integration & Area Calculator</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Math.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.0/math.js"></script>
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .mono {
+      font-family: 'Fira Code', monospace;
+    }
+    /* Hide scrollbars for slick look but keep scrolling functional */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col transition-colors duration-200">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-indigo-600 rounded-lg text-white shadow-md shadow-indigo-200">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold text-slate-900 tracking-tight">Definite Integration & Area Calculator</h1>
+          <p class="text-xs text-slate-500">Visualize area under curves, compute definite integrals, and explore numerical approximations</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+          <i data-lucide-sparkles class="w-3.5 h-3.5 mr-1 text-indigo-500"></i> Desmos Inspired
+        </span>
+        <button id="help-btn" class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors" title="How to use">
+          <i data-lucide-help-circle class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Help Modal (Overlay) -->
+  <div id="help-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 relative animate-in fade-in zoom-in-95 duration-200">
+      <button id="close-help-btn" class="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50">
+        <i data-lucide-x class="w-5 h-5"></i>
+      </button>
+      <h3 class="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+        <i data-lucide-help-circle class="text-indigo-600"></i> Math Input Guide
+      </h3>
+      <div class="space-y-3 text-sm text-slate-600">
+        <p>You can enter almost any mathematical expression of variable <span class="mono bg-slate-100 px-1 rounded text-red-500">x</span>. The calculator parses it safely using Math.js.</p>
+        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1">
+          <p class="font-medium text-slate-700 text-xs uppercase tracking-wider mb-1">Supported Formats:</p>
+          <ul class="list-disc pl-4 space-y-1 text-xs">
+            <li><strong class="mono">x^2 - 4*x + 3</strong> (Powers and multiplication)</li>
+            <li><strong class="mono">sin(x) + cos(x/2)</strong> (Trigonometric functions)</li>
+            <li><strong class="mono">exp(-x^2)</strong> (Exponential Gaussian curve)</li>
+            <li><strong class="mono">log(x)</strong> or <strong class="mono">ln(x)</strong> (Natural Logarithm)</li>
+            <li><strong class="mono">sqrt(x^2 + 1)</strong> (Square roots)</li>
+            <li><strong class="mono">abs(x)</strong> (Absolute values)</li>
+          </ul>
+        </div>
+        <p class="text-xs text-slate-400">Note: Use explicit multiplication asterisk (*) when multiplying variables, e.g., <span class="mono">3*x</span> instead of <span class="mono">3x</span> for maximum reliability.</p>
+      </div>
+      <div class="mt-6 flex justify-end">
+        <button id="dismiss-help-btn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg text-sm shadow transition-colors">Got it!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- Left Column: Controls & Presets (5 Cols) -->
+      <section class="lg:col-span-5 space-y-6">
+        
+        <!-- Controls Card -->
+        <div class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+          <h2 class="text-base font-semibold text-slate-900 flex items-center gap-2">
+            <i data-lucide-sliders class="w-5 h-5 text-indigo-600"></i> Calculator Parameters
+          </h2>
+          
+          <!-- Function Input -->
+          <div class="space-y-1.5 relative">
+            <div class="flex justify-between items-center">
+              <label for="function-input" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Function f(x)</label>
+              <div id="function-status" class="text-xs flex items-center gap-1 text-emerald-600 font-medium">
+                <i data-lucide-check-circle2 class="w-3.5 h-3.5"></i> Valid Expression
+              </div>
+            </div>
+            <div class="relative rounded-lg shadow-sm">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span class="text-slate-400 font-serif italic text-base font-semibold">f(x) =</span>
+              </div>
+              <input type="text" id="function-input" value="x^2 - 2*x - 1"
+                class="block w-full pl-16 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:bg-white text-slate-900 font-medium mono text-base transition-colors"
+                placeholder="e.g., x^2 - 1">
+              <div class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer hover:text-slate-600 text-slate-400" id="clear-fn-btn">
+                <i data-lucide-x-circle class="w-5 h-5"></i>
+              </div>
+            </div>
+            <!-- Error helper display -->
+            <div id="function-error" class="text-xs text-red-500 font-medium hidden flex items-center gap-1 bg-red-50 p-2 rounded-lg border border-red-100">
+              <i data-lucide-alert-triangle class="w-3.5 h-3.5 flex-shrink-0"></i>
+              <span id="error-message">Invalid formula</span>
+            </div>
+          </div>
+
+          <!-- Quick Presets -->
+          <div class="space-y-1.5">
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Quick Presets</label>
+            <div class="flex flex-wrap gap-2">
+              <button data-preset="x^2 - 2*x - 1" data-a="-1" data-b="3" class="preset-btn px-2.5 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 hover:border-indigo-200 transition-all">
+                Quadratic Curve
+              </button>
+              <button data-preset="sin(x)" data-a="0" data-b="pi" class="preset-btn px-2.5 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 hover:border-indigo-200 transition-all">
+                Sine Wave [0, π]
+              </button>
+              <button data-preset="4 / (x^2 + 1)" data-a="0" data-b="1" class="preset-btn px-2.5 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 hover:border-indigo-200 transition-all">
+                Runge Arc [0, 1]
+              </button>
+              <button data-preset="exp(-x^2)" data-a="-2" data-b="2" class="preset-btn px-2.5 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 hover:border-indigo-200 transition-all">
+                Gaussian Curve
+              </button>
+              <button data-preset="x^3 - 3*x" data-a="-2" data-b="2" class="preset-btn px-2.5 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 hover:border-indigo-200 transition-all">
+                Cubic Loop
+              </button>
+            </div>
+          </div>
+
+          <!-- Interval bounds a & b -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+            <!-- Lower Bound a -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between items-center">
+                <label for="bound-a-input" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Lower Bound (a)</label>
+                <span class="text-xs font-mono text-indigo-600 font-semibold" id="bound-a-val">-1</span>
+              </div>
+              <input type="text" id="bound-a-input" value="-1"
+                class="block w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 font-semibold text-sm transition-all">
+              <input type="range" id="bound-a-slider" min="-10" max="10" step="0.1" value="-1"
+                class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+            </div>
+
+            <!-- Upper Bound b -->
+            <div class="space-y-1.5">
+              <div class="flex justify-between items-center">
+                <label for="bound-b-input" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Upper Bound (b)</label>
+                <span class="text-xs font-mono text-indigo-600 font-semibold" id="bound-b-val">3</span>
+              </div>
+              <input type="text" id="bound-b-input" value="3"
+                class="block w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 font-semibold text-sm transition-all">
+              <input type="range" id="bound-b-slider" min="-10" max="10" step="0.1" value="3"
+                class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+            </div>
+          </div>
+
+          <!-- Dynamic Segments N (Precision) -->
+          <div class="space-y-2 pt-2 border-t border-slate-100">
+            <div class="flex justify-between items-center">
+              <label for="segments-slider" class="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                Subintervals (N) 
+                <span class="group relative">
+                  <i data-lucide-info class="w-3.5 h-3.5 text-slate-400 cursor-help"></i>
+                  <span class="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-1 w-48 bg-slate-800 text-white text-[10px] p-2 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                    Defines the division frequency for Riemann, Trapezoidal, and Simpson numerical methods.
+                  </span>
+                </span>
+              </label>
+              <span class="text-xs font-bold font-mono text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md" id="segments-val">100</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <input type="range" id="segments-slider" min="4" max="500" step="2" value="100"
+                class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Result Card -->
+        <div class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-6 rounded-2xl shadow-xl shadow-indigo-950/10 relative overflow-hidden">
+          <!-- Background decorative accents -->
+          <div class="absolute -right-8 -top-8 w-24 h-24 bg-indigo-500/10 rounded-full blur-2xl"></div>
+          <div class="absolute right-12 bottom-0 w-36 h-36 bg-blue-500/15 rounded-full blur-3xl"></div>
+
+          <div class="relative space-y-4">
+            <h3 class="text-sm font-semibold tracking-wider text-indigo-200 uppercase flex items-center gap-1.5">
+              <i data-lucide-calculator class="w-4 h-4"></i> Calculated Definite Integral
+            </h3>
+            
+            <!-- Mathematical Expression Display -->
+            <div class="flex items-center gap-2 overflow-x-auto py-2 border-b border-white/10 select-all">
+              <div class="flex items-center text-indigo-300 relative select-none">
+                <span class="text-4xl font-light font-serif">∫</span>
+                <div class="absolute -top-1.5 left-2 text-[10px] font-mono font-bold" id="math-display-b">3</div>
+                <div class="absolute -bottom-1 left-1.5 text-[10px] font-mono font-bold" id="math-display-a">-1</div>
+              </div>
+              <div class="flex items-center gap-1.5 pl-3">
+                <span class="text-base font-semibold tracking-wide bg-white/5 px-2.5 py-1 rounded-lg text-white font-mono" id="math-display-fx">x^2 - 2*x - 1</span>
+                <span class="text-indigo-300 font-serif font-semibold text-lg italic">dx</span>
+                <span class="text-indigo-300 font-semibold text-lg">=</span>
+              </div>
+            </div>
+
+            <!-- Value Showcase -->
+            <div class="pt-1 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+              <div>
+                <div class="text-4xl sm:text-5xl font-extrabold tracking-tight font-mono text-emerald-400" id="integral-result-value">
+                  -1.33333
+                </div>
+                <p class="text-[10px] text-indigo-200/70 mt-1 uppercase tracking-widest font-medium">Simpson's 1/3 Rule Approximation</p>
+              </div>
+              <div class="text-right">
+                <div class="text-sm font-medium text-slate-300">Sign of Area:</div>
+                <div id="area-sign" class="text-xs font-semibold inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full bg-red-500/20 text-red-300">
+                  <i data-lucide-trending-down class="w-3.5 h-3.5"></i> Negative Area
+                </div>
+              </div>
+            </div>
+
+            <!-- Additional Calculations Block -->
+            <div class="grid grid-cols-2 gap-3 pt-3 border-t border-white/10 text-xs">
+              <div class="bg-white/5 p-2 rounded-lg border border-white/5">
+                <span class="text-indigo-200/70 block">Average Value (f<sub>avg</sub>)</span>
+                <span id="avg-value" class="font-mono font-bold text-sm text-white">0.3333</span>
+              </div>
+              <div class="bg-white/5 p-2 rounded-lg border border-white/5">
+                <span class="text-indigo-200/70 block flex items-center gap-1">Arc Length (L)</span>
+                <span id="arc-length-value" class="font-mono font-bold text-sm text-white">4.8931</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Right Column: Interactive Graph & Comparatives (7 Cols) -->
+      <section class="lg:col-span-7 space-y-6">
+        
+        <!-- Graph Card -->
+        <div class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+            <h2 class="text-base font-semibold text-slate-900 flex items-center gap-2">
+              <i data-lucide-activity class="w-5 h-5 text-indigo-600"></i> Area Visualization Plot
+            </h2>
+            
+            <!-- Graph Settings / Controls -->
+            <div class="flex items-center gap-2 text-xs">
+              <button id="btn-zoom-fit" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition-colors flex items-center gap-1 font-medium">
+                <i data-lucide-maximize-2 class="w-3.5 h-3.5"></i> Auto-Center
+              </button>
+              <button id="toggle-grid" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition-colors flex items-center gap-1 font-medium">
+                <i data-lucide-grid class="w-3.5 h-3.5"></i> Toggle Grid
+              </button>
+            </div>
+          </div>
+
+          <!-- Chart Wrapper with Responsive Container -->
+          <div class="relative w-full bg-slate-50 rounded-xl border border-slate-100 p-2 overflow-hidden">
+            <div class="h-[380px] sm:h-[420px] w-full relative">
+              <canvas id="integrationChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Plot Legend Indicator -->
+          <div class="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 text-xs text-slate-500 py-1 bg-slate-50/50 rounded-lg">
+            <span class="flex items-center gap-1.5">
+              <span class="w-3 h-0.5 bg-indigo-600 inline-block rounded"></span> Curve f(x)
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="w-3 h-3 bg-indigo-200 border border-indigo-400 inline-block rounded"></span> Integrated Region
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="w-3 h-0.5 border-t border-dashed border-red-500 inline-block"></span> Boundary X = a
+            </span>
+            <span class="flex items-center gap-1.5">
+              <span class="w-3 h-0.5 border-t border-dashed border-emerald-500 inline-block"></span> Boundary X = b
+            </span>
+          </div>
+        </div>
+
+        <!-- Methods Comparison Card -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            <div>
+              <h2 class="text-base font-semibold text-slate-900 flex items-center gap-2">
+                <i data-lucide-bar-chart-2 class="w-5 h-5 text-indigo-600"></i> Numerical Methods Comparison
+              </h2>
+              <p class="text-xs text-slate-500 mt-0.5">Observe convergence based on different approximation algorithms</p>
+            </div>
+            <span class="text-[10px] font-bold text-slate-400 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded tracking-wide uppercase">N = <span id="comparison-n-label">100</span></span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-100">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Method / Rule</th>
+                  <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Calculated Value</th>
+                  <th class="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Error Variance</th>
+                  <th class="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Approach Mechanics</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 text-xs text-slate-700" id="comparison-table-body">
+                <!-- Row 1: Simpson -->
+                <tr class="hover:bg-slate-50/50">
+                  <td class="px-6 py-3.5 font-semibold text-slate-900">Simpson's 1/3 Rule</td>
+                  <td class="px-6 py-3.5 text-right font-mono font-semibold text-indigo-600" id="calc-val-simpson">0.00000</td>
+                  <td class="px-6 py-3.5 text-right font-mono text-slate-400" id="err-simpson">Ref (0.00%)</td>
+                  <td class="px-6 py-3.5 text-slate-500">Parabolic fitting over quadratic subintervals</td>
+                </tr>
+                <!-- Row 2: Trapezoidal -->
+                <tr class="hover:bg-slate-50/50">
+                  <td class="px-6 py-3.5 font-semibold text-slate-900">Trapezoidal Rule</td>
+                  <td class="px-6 py-3.5 text-right font-mono font-semibold text-slate-800" id="calc-val-trapezoid">0.00000</td>
+                  <td class="px-6 py-3.5 text-right font-mono text-amber-600" id="err-trapezoid">0.00%</td>
+                  <td class="px-6 py-3.5 text-slate-500">Linear interpolation of trapezoids under the curve</td>
+                </tr>
+                <!-- Row 3: Midpoint -->
+                <tr class="hover:bg-slate-50/50">
+                  <td class="px-6 py-3.5 font-semibold text-slate-900">Midpoint Sum</td>
+                  <td class="px-6 py-3.5 text-right font-mono font-semibold text-slate-800" id="calc-val-midpoint">0.00000</td>
+                  <td class="px-6 py-3.5 text-right font-mono text-amber-600" id="err-midpoint">0.00%</td>
+                  <td class="px-6 py-3.5 text-slate-500">Central Riemann sum evaluated at subinterval midpoints</td>
+                </tr>
+                <!-- Row 4: Left Riemann -->
+                <tr class="hover:bg-slate-50/50">
+                  <td class="px-6 py-3.5 font-semibold text-slate-900">Left Riemann Sum</td>
+                  <td class="px-6 py-3.5 text-right font-mono font-semibold text-slate-800" id="calc-val-left">0.00000</td>
+                  <td class="px-6 py-3.5 text-right font-mono text-orange-600" id="err-left">0.00%</td>
+                  <td class="px-6 py-3.5 text-slate-500">Rectangle values bound to the left-side interval edges</td>
+                </tr>
+                <!-- Row 5: Right Riemann -->
+                <tr class="hover:bg-slate-50/50">
+                  <td class="px-6 py-3.5 font-semibold text-slate-900">Right Riemann Sum</td>
+                  <td class="px-6 py-3.5 text-right font-mono font-semibold text-slate-800" id="calc-val-right">0.00000</td>
+                  <td class="px-6 py-3.5 text-right font-mono text-orange-600" id="err-right">0.00%</td>
+                  <td class="px-6 py-3.5 text-slate-500">Rectangle values bound to the right-side interval edges</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 mt-auto py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-500 space-y-1">
+      <p>&copy; 2026 Definite Integration & Area Calculator. Developed for visual and rigorous mathematical exploration.</p>
+      <p>Calculations approximated using numerical methods. Chart dynamic scaling handles singularities smoothly.</p>
+    </div>
+  </footer>
+
+  <!-- App Core Logics -->
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Core state
+    let chartInstance = null;
+    let mathCompiledExpression = null;
+    let gridVisible = true;
+    let autoScaleOnUpdate = true;
+
+    // DOM Elements
+    const functionInput = document.getElementById('function-input');
+    const functionStatus = document.getElementById('function-status');
+    const functionError = document.getElementById('function-error');
+    const errorMessage = document.getElementById('error-message');
+    const clearFnBtn = document.getElementById('clear-fn-btn');
+
+    const boundAInput = document.getElementById('bound-a-input');
+    const boundASlider = document.getElementById('bound-a-slider');
+    const boundAValDisplay = document.getElementById('bound-a-val');
+
+    const boundBInput = document.getElementById('bound-b-input');
+    const boundBSlider = document.getElementById('bound-b-slider');
+    const boundBValDisplay = document.getElementById('bound-b-val');
+
+    const segmentsSlider = document.getElementById('segments-slider');
+    const segmentsValDisplay = document.getElementById('segments-val');
+    const comparisonNLabel = document.getElementById('comparison-n-label');
+
+    // Display elements
+    const mathDisplayA = document.getElementById('math-display-a');
+    const mathDisplayB = document.getElementById('math-display-b');
+    const mathDisplayFx = document.getElementById('math-display-fx');
+    const integralResultValue = document.getElementById('integral-result-value');
+    const areaSignDisplay = document.getElementById('area-sign');
+    const avgValueDisplay = document.getElementById('avg-value');
+    const arcLengthValueDisplay = document.getElementById('arc-length-value');
+
+    // UI Buttons
+    const helpBtn = document.getElementById('help-btn');
+    const helpModal = document.getElementById('help-modal');
+    const closeHelpBtn = document.getElementById('close-help-btn');
+    const dismissHelpBtn = document.getElementById('dismiss-help-btn');
+    const presetBtns = document.querySelectorAll('.preset-btn');
+    const btnZoomFit = document.getElementById('btn-zoom-fit');
+    const btnToggleGrid = document.getElementById('toggle-grid');
+
+    // Mathematical parser & evaluator
+    function compileFunction() {
+      const expr = functionInput.value.trim();
+      if (!expr) {
+        showError("Please enter a valid mathematical expression.");
+        return false;
+      }
+      try {
+        const parsed = math.parse(expr);
+        // Compile expression
+        mathCompiledExpression = parsed.compile();
+        
+        // Test compile with a arbitrary x value to guarantee standard function behavior
+        const testVal = mathCompiledExpression.evaluate({ x: 1 });
+        if (typeof testVal === 'object' && testVal !== null && testVal.isComplex) {
+          showError("Formula outputs complex numbers. Please use real expressions.");
+          return false;
+        }
+
+        // Hide error state, show success
+        functionStatus.classList.remove('hidden');
+        functionError.classList.add('hidden');
+        return true;
+      } catch (err) {
+        showError(err.message || "Syntactical error in mathematical formula.");
+        return false;
+      }
+    }
+
+    function showError(msg) {
+      functionStatus.classList.add('hidden');
+      functionError.classList.remove('hidden');
+      errorMessage.textContent = msg;
+      mathCompiledExpression = null;
+    }
+
+    // Safely evaluate Compiled Math.js Expression
+    function evaluateF(x) {
+      if (!mathCompiledExpression) return 0;
+      try {
+        const result = mathCompiledExpression.evaluate({ x: x });
+        if (typeof result === 'number' && !isNaN(result) && isFinite(result)) {
+          return result;
+        }
+        return 0; // fallback safe evaluation
+      } catch (e) {
+        return 0; // fallback
+      }
+    }
+
+    // Safely parse numerical values / expressions (e.g., pi/2 or sqrt(3))
+    function parseValueSafe(inputVal, fallback) {
+      try {
+        const parsed = math.evaluate(inputVal);
+        if (typeof parsed === 'number' && !isNaN(parsed) && isFinite(parsed)) {
+          return parsed;
+        }
+        return fallback;
+      } catch(e) {
+        return fallback;
+      }
+    }
+
+    // Clean decimals for display
+    function formatValue(val) {
+      if (Math.abs(val) < 1e-4 && val !== 0) {
+        return val.toExponential(4);
+      }
+      return val.toLocaleString(undefined, { minimumFractionDigits: 5, maximumFractionDigits: 5 });
+    }
+
+    // Approximate Integrals using various rules
+    function runSimpsonRule(a, b, N) {
+      if (N % 2 !== 0) N += 1; // Simpson's rule requires even number of intervals
+      const h = (b - a) / N;
+      let sum = evaluateF(a) + evaluateF(b);
+      
+      for (let i = 1; i < N; i++) {
+        const x = a + i * h;
+        if (i % 2 === 0) {
+          sum += 2 * evaluateF(x);
+        } else {
+          sum += 4 * evaluateF(x);
+        }
+      }
+      return (h / 3) * sum;
+    }
+
+    function runTrapezoidalRule(a, b, N) {
+      const h = (b - a) / N;
+      let sum = 0.5 * (evaluateF(a) + evaluateF(b));
+      
+      for (let i = 1; i < N; i++) {
+        const x = a + i * h;
+        sum += evaluateF(x);
+      }
+      return h * sum;
+    }
+
+    function runMidpointSum(a, b, N) {
+      const h = (b - a) / N;
+      let sum = 0;
+      
+      for (let i = 0; i < N; i++) {
+        const midX = a + (i + 0.5) * h;
+        sum += evaluateF(midX);
+      }
+      return h * sum;
+    }
+
+    function runLeftRiemannSum(a, b, N) {
+      const h = (b - a) / N;
+      let sum = 0;
+      
+      for (let i = 0; i < N; i++) {
+        const x = a + i * h;
+        sum += evaluateF(x);
+      }
+      return h * sum;
+    }
+
+    function runRightRiemannSum(a, b, N) {
+      const h = (b - a) / N;
+      let sum = 0;
+      
+      for (let i = 1; i <= N; i++) {
+        const x = a + i * h;
+        sum += evaluateF(x);
+      }
+      return h * sum;
+    }
+
+    // Precise Derivative Approximation at point x
+    function approxDerivative(x, h = 1e-5) {
+      return (evaluateF(x + h) - evaluateF(x - h)) / (2 * h);
+    }
+
+    // Compute Arc Length: Integral_a^b ( sqrt(1 + f'(x)^2) dx )
+    function runArcLengthCalculation(a, b, N = 100) {
+      if (N % 2 !== 0) N += 1;
+      const h = (b - a) / N;
+      
+      const arcIntegrand = (x) => {
+        const df = approxDerivative(x);
+        return Math.sqrt(1 + df * df);
+      };
+
+      let sum = arcIntegrand(a) + arcIntegrand(b);
+      for (let i = 1; i < N; i++) {
+        const x = a + i * h;
+        if (i % 2 === 0) {
+          sum += 2 * arcIntegrand(x);
+        } else {
+          sum += 4 * arcIntegrand(x);
+        }
+      }
+      return (h / 3) * sum;
+    }
+
+    // Perform entire set of calculations and update text
+    function performCalculations() {
+      if (!mathCompiledExpression) return;
+
+      const a = parseValueSafe(boundAInput.value, -1);
+      const b = parseValueSafe(boundBInput.value, 3);
+      const N = parseInt(segmentsSlider.value) || 100;
+
+      // Simpson is considered the primary / best value in this tool
+      const simpsonResult = runSimpsonRule(a, b, N);
+      const trapezoidResult = runTrapezoidalRule(a, b, N);
+      const midpointResult = runMidpointSum(a, b, N);
+      const leftResult = runLeftRiemannSum(a, b, N);
+      const rightResult = runRightRiemannSum(a, b, N);
+
+      // Display main results
+      integralResultValue.textContent = formatValue(simpsonResult);
+      
+      // Arc Length
+      const lengthResult = runArcLengthCalculation(a, b, N);
+      arcLengthValueDisplay.textContent = formatValue(lengthResult);
+
+      // Average Value: 1/(b-a) * Integral
+      const width = b - a;
+      if (Math.abs(width) > 1e-8) {
+        const averageVal = simpsonResult / width;
+        avgValueDisplay.textContent = formatValue(averageVal);
+      } else {
+        avgValueDisplay.textContent = "N/A";
+      }
+
+      // Format formula display markers
+      mathDisplayA.textContent = a.toLocaleString(undefined, { maximumFractionDigits: 3 });
+      mathDisplayB.textContent = b.toLocaleString(undefined, { maximumFractionDigits: 3 });
+      mathDisplayFx.textContent = functionInput.value;
+
+      // Manage Area signs
+      if (simpsonResult > 0.0001) {
+        areaSignDisplay.innerHTML = `<i data-lucide-trending-up class="w-3.5 h-3.5"></i> Positive Area`;
+        areaSignDisplay.className = "text-xs font-semibold inline-flex items-center gap-1 mt-0.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300";
+      } else if (simpsonResult < -0.0001) {
+        areaSignDisplay.innerHTML = `<i data-lucide-trending-down class="w-3.5 h-3.5"></i> Negative Area`;
+        areaSignDisplay.className = "text-xs font-semibold inline-flex items-center gap-1 mt-0.5 px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300";
+      } else {
+        areaSignDisplay.innerHTML = `<i data-lucide-minus-circle class="w-3.5 h-3.5"></i> Net Zero Area`;
+        areaSignDisplay.className = "text-xs font-semibold inline-flex items-center gap-1 mt-0.5 px-2.5 py-0.5 rounded-full bg-slate-500/20 text-slate-300";
+      }
+      lucide.createIcons();
+
+      // Populate Comparison Table & percentage variance relative to Simpson's rule
+      const ref = simpsonResult;
+      const getVarianceStr = (val) => {
+        if (Math.abs(ref) < 1e-6) return "—";
+        const pctDiff = ((val - ref) / Math.abs(ref)) * 100;
+        const sign = pctDiff > 0 ? "+" : "";
+        return `${sign}${pctDiff.toFixed(3)}%`;
+      };
+
+      document.getElementById('calc-val-simpson').textContent = formatValue(simpsonResult);
+      document.getElementById('err-simpson').textContent = "Ref (Best)";
+
+      document.getElementById('calc-val-trapezoid').textContent = formatValue(trapezoidResult);
+      document.getElementById('err-trapezoid').textContent = getVarianceStr(trapezoidResult);
+
+      document.getElementById('calc-val-midpoint').textContent = formatValue(midpointResult);
+      document.getElementById('err-midpoint').textContent = getVarianceStr(midpointResult);
+
+      document.getElementById('calc-val-left').textContent = formatValue(leftResult);
+      document.getElementById('err-left').textContent = getVarianceStr(leftResult);
+
+      document.getElementById('calc-val-right').textContent = formatValue(rightResult);
+      document.getElementById('err-right').textContent = getVarianceStr(rightResult);
+    }
+
+    // Charting functionality using Chart.js
+    function renderChart() {
+      if (!mathCompiledExpression) return;
+
+      const a = parseValueSafe(boundAInput.value, -1);
+      const b = parseValueSafe(boundBInput.value, 3);
+
+      // Determine view range with dynamic cushion margins around a and b
+      const width = Math.abs(b - a);
+      const minBound = Math.min(a, b);
+      const maxBound = Math.max(a, b);
+      const cushion = width > 0 ? Math.max(width * 0.4, 1.5) : 3;
+      
+      const xStart = minBound - cushion;
+      const xEnd = maxBound + cushion;
+
+      const totalPlotPoints = 250;
+      const step = (xEnd - xStart) / totalPlotPoints;
+
+      const fullCurveData = [];
+      const shadedAreaData = [];
+
+      // Generate points for full curve and check singularity values
+      for (let i = 0; i <= totalPlotPoints; i++) {
+        const x = xStart + i * step;
+        const y = evaluateF(x);
+        
+        // Skip extreme infinity values to keep graph clean
+        if (Math.abs(y) < 1000) {
+          fullCurveData.push({ x: x, y: y });
+        }
+      }
+
+      // Generate points inside integrated region a -> b
+      // Density in shaded area can be higher for smoother visual edges
+      const shadeSteps = 150;
+      const shadeStepSize = (b - a) / shadeSteps;
+      for (let i = 0; i <= shadeSteps; i++) {
+        const x = a + i * shadeStepSize;
+        const y = evaluateF(x);
+        if (Math.abs(y) < 1000) {
+          shadedAreaData.push({ x: x, y: y });
+        }
+      }
+
+      // Boundary Line datasets
+      const verticalLineA = [
+        { x: a, y: 0 },
+        { x: a, y: evaluateF(a) }
+      ];
+      const verticalLineB = [
+        { x: b, y: 0 },
+        { x: b, y: evaluateF(b) }
+      ];
+
+      // Build or update the Chart
+      const ctx = document.getElementById('integrationChart').getContext('2d');
+      
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets: [
+            {
+              label: 'f(x)',
+              data: fullCurveData,
+              borderColor: '#4f46e5', // indigo-600
+              borderWidth: 3,
+              pointRadius: 0,
+              hoverRadius: 0,
+              fill: false,
+              tension: 0.15,
+              z: 20
+            },
+            {
+              label: 'Shaded Area',
+              data: shadedAreaData,
+              borderColor: 'transparent',
+              backgroundColor: 'rgba(79, 70, 229, 0.22)', // semi-trans indigo
+              fill: 'origin',
+              pointRadius: 0,
+              hoverRadius: 0,
+              z: 10
+            },
+            {
+              label: 'Bound a',
+              data: verticalLineA,
+              borderColor: '#ef4444', // red-500
+              borderWidth: 2,
+              borderDash: [5, 4],
+              pointRadius: 4,
+              pointBackgroundColor: '#ef4444',
+              fill: false,
+              z: 30
+            },
+            {
+              label: 'Bound b',
+              data: verticalLineB,
+              borderColor: '#10b981', // emerald-500
+              borderWidth: 2,
+              borderDash: [5, 4],
+              pointRadius: 4,
+              pointBackgroundColor: '#10b981',
+              fill: false,
+              z: 30
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false // We use custom legends
+            },
+            tooltip: {
+              enabled: true,
+              mode: 'index',
+              intersect: false,
+              callbacks: {
+                title: function(context) {
+                  return `x = ${parseFloat(context[0].parsed.x).toFixed(4)}`;
+                },
+                label: function(context) {
+                  if (context.dataset.label === 'f(x)') {
+                    return `f(x) = ${parseFloat(context.parsed.y).toFixed(4)}`;
+                  }
+                  return null;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: 'linear',
+              position: 'bottom',
+              grid: {
+                display: gridVisible,
+                color: 'rgba(226, 232, 240, 0.8)' // slate-200
+              },
+              title: {
+                display: true,
+                text: 'X Axis',
+                font: {
+                  size: 11,
+                  weight: 'semibold'
+                }
+              }
+            },
+            y: {
+              type: 'linear',
+              grid: {
+                display: gridVisible,
+                color: 'rgba(226, 232, 240, 0.8)'
+              },
+              title: {
+                display: true,
+                text: 'Y Axis',
+                font: {
+                  size: 11,
+                  weight: 'semibold'
+                }
+              }
+            }
+          },
+          animation: {
+            duration: autoScaleOnUpdate ? 600 : 0 // Smooth transition animations
+          }
+        }
+      });
+      
+      // AutoScale on update setting resets to active after initial load animation
+      autoScaleOnUpdate = true;
+    }
+
+    // Handles synchronization when bounds are updated
+    function updateBoundsState(source) {
+      let a = parseValueSafe(boundAInput.value, -1);
+      let b = parseValueSafe(boundBInput.value, 3);
+
+      if (source === 'input-a') {
+        boundASlider.value = a;
+        boundAValDisplay.textContent = a;
+      } else if (source === 'slider-a') {
+        a = parseFloat(boundASlider.value);
+        boundAInput.value = a;
+        boundAValDisplay.textContent = a;
+      } else if (source === 'input-b') {
+        boundBSlider.value = b;
+        boundBValDisplay.textContent = b;
+      } else if (source === 'slider-b') {
+        b = parseFloat(boundBSlider.value);
+        boundBInput.value = b;
+        boundBValDisplay.textContent = b;
+      }
+
+      performCalculations();
+      renderChart();
+    }
+
+    // Event Listeners for UI interaction
+    functionInput.addEventListener('input', () => {
+      if (compileFunction()) {
+        performCalculations();
+        renderChart();
+      }
+    });
+
+    clearFnBtn.addEventListener('click', () => {
+      functionInput.value = '';
+      functionInput.focus();
+      showError("Please enter a valid mathematical expression.");
+    });
+
+    // Bound A Sliders & Inputs
+    boundAInput.addEventListener('change', () => updateBoundsState('input-a'));
+    boundASlider.addEventListener('input', () => {
+      autoScaleOnUpdate = false; // smooth real-time slider sliding
+      updateBoundsState('slider-a');
+    });
+
+    // Bound B Sliders & Inputs
+    boundBInput.addEventListener('change', () => updateBoundsState('input-b'));
+    boundBSlider.addEventListener('input', () => {
+      autoScaleOnUpdate = false; // smooth real-time slider sliding
+      updateBoundsState('slider-b');
+    });
+
+    // Segments slider
+    segmentsSlider.addEventListener('input', (e) => {
+      const val = e.target.value;
+      segmentsValDisplay.textContent = val;
+      comparisonNLabel.textContent = val;
+      performCalculations();
+    });
+
+    // Preset Buttons click handlers
+    presetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        functionInput.value = btn.getAttribute('data-preset');
+        
+        const aVal = btn.getAttribute('data-a');
+        const bVal = btn.getAttribute('data-b');
+        
+        boundAInput.value = aVal;
+        boundBInput.value = bVal;
+
+        // Resolve math names for slider thresholds if any
+        const parsedA = parseValueSafe(aVal, -1);
+        const parsedB = parseValueSafe(bVal, 3);
+
+        boundASlider.value = parsedA;
+        boundBSlider.value = parsedB;
+        boundAValDisplay.textContent = parsedA;
+        boundBValDisplay.textContent = parsedB;
+
+        if (compileFunction()) {
+          performCalculations();
+          renderChart();
+        }
+      });
+    });
+
+    // Help Modals
+    helpBtn.addEventListener('click', () => helpModal.classList.remove('hidden'));
+    closeHelpBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
+    dismissHelpBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
+    
+    // Zoom/Fit View Button click handler
+    btnZoomFit.addEventListener('click', () => {
+      autoScaleOnUpdate = true;
+      renderChart();
+    });
+
+    // Toggle grid view
+    btnToggleGrid.addEventListener('click', () => {
+      gridVisible = !gridVisible;
+      renderChart();
+    });
+
+    // Trigger initial calculations & rendering on DOM Ready
+    window.onload = function() {
+      if (compileFunction()) {
+        performCalculations();
+        renderChart();
+      }
+    };
+  </script>
+</body>
+</html>
